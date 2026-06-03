@@ -8,7 +8,8 @@ from hythreed_vae.Module.vae import VAE
 
 def demo():
     home = '/mnt/EFS2/share_89f07eb4_6378_4d3c_8c02/lichanghao/'
-    model_file_path = home + 'chLi/Model/HY3D/vae/model.fp16.ckpt'
+    # 模型文件夹内需同时包含 model.fp16.ckpt 和 config.yaml。
+    model_folder_path = home + 'chLi/Model/HY3D/vae/'
     device = 'cuda:0'
 
     # 输入是点云（这里用一个 mesh 采样得到点云做演示），输出是三角网格。
@@ -20,7 +21,7 @@ def demo():
     octree_resolution = 256
 
     vae = VAE(
-        model_file_path=model_file_path,
+        model_folder_path=model_folder_path,
         device=device,
     )
 

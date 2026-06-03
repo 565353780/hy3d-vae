@@ -94,7 +94,7 @@ class VAE(object):
 
     def __init__(
         self,
-        model_file_path: Optional[str] = None,
+        model_folder_path: Optional[str] = None,
         device: str = 'cuda:0',
         dtype: torch.dtype = torch.float16,
         num_uniform_points: int = HY3D_DEFAULT_NUM_UNIFORM_POINTS,
@@ -109,61 +109,46 @@ class VAE(object):
             num_sharp_points=num_sharp_points,
         )
 
-        if model_file_path is not None:
-            self.loadModel(model_file_path)
+        if model_folder_path is not None:
+            self.loadModel(model_folder_path)
         return
 
     def loadModel(
         self,
-        model_file_path: str,
+        model_folder_path: str,
     ) -> bool:
         """加载 Hunyuan3D ShapeVAE 权重。
 
-        ``model_file_path`` 兼容三种形态：
-        1. 指向 ``model.fp16.ckpt`` / ``*.ckpt`` / ``*.safetensors`` 的单文件，
-           默认使用同目录下的 ``config.yaml``。
-        2. 指向包含 ``config.yaml`` + ``model*.ckpt`` 的模型子目录。
+        ``model_folder_path`` 兼容三种形态：
+        1. 模型文件夹（推荐）：包含 ``config.yaml`` 和 ``model*.ckpt`` /
+           ``model*.safetensors``（官方标准命名 ``model.fp16.ckpt`` +
+           ``config.yaml``）。``config.yaml`` 提供网络结构超参，ckpt 仅含权重，
+           二者缺一不可。
+        2. 直接指向某个 ckpt / safetensors 单文件：默认使用同目录的
+           ``config.yaml``。
         3. HuggingFace / 本地 repo id（如 ``tencent/Hunyuan3D-2.1``），交给
            ``ShapeVAE.from_pretrained`` 自动定位 ``hunyuan3d-vae-v2-1`` 子目录。
         """
 
-        if os.path.isfile(model_file_path):
-            use_safetensors = model_file_path.endswith('.safetensors')
-            config_path = os.path.join(
-                os.path.dirname(model_file_path), 'config.yaml'
-            )
+        if os.path.isdir(model_folder_path):
+            config_path = os.path.join(model_folder_path, 'config.yaml')
             if not os.path.exists(config_path):
                 print('[ERROR][VAE::loadModel]')
-                print('\t config.yaml not found beside ckpt!')
-                print('\t expected config_path:', config_path)
-                return False
-
-            self.model = ShapeVAE.from_single_file(
-                ckpt_path=model_file_path,
-                config_path=config_path,
-                device=str(self.device),
-                dtype=self.dtype,
-                use_safetensors=use_safetensors,
-            )
-        elif os.path.isdir(model_file_path):
-            config_path = os.path.join(model_file_path, 'config.yaml')
-            if not os.path.exists(config_path):
-                print('[ERROR][VAE::loadModel]')
-                print('\t config.yaml not found in model dir!')
-                print('\t model_file_path:', model_file_path)
+                print('\t config.yaml not found in model folder!')
+                print('\t model_folder_path:', model_folder_path)
                 return False
 
             ckpt_path = None
             for name in ('model.fp16.ckpt', 'model.ckpt', 'model.fp16.safetensors',
                          'model.safetensors'):
-                candidate = os.path.join(model_file_path, name)
+                candidate = os.path.join(model_folder_path, name)
                 if os.path.exists(candidate):
                     ckpt_path = candidate
                     break
             if ckpt_path is None:
                 print('[ERROR][VAE::loadModel]')
-                print('\t no model ckpt/safetensors found in model dir!')
-                print('\t model_file_path:', model_file_path)
+                print('\t no model ckpt/safetensors found in model folder!')
+                print('\t model_folder_path:', model_folder_path)
                 return False
 
             self.model = ShapeVAE.from_single_file(
@@ -173,10 +158,28 @@ class VAE(object):
                 dtype=self.dtype,
                 use_safetensors=ckpt_path.endswith('.safetensors'),
             )
+        elif os.path.isfile(model_folder_path):
+            use_safetensors = model_folder_path.endswith('.safetensors')
+            config_path = os.path.join(
+                os.path.dirname(model_folder_path), 'config.yaml'
+            )
+            if not os.path.exists(config_path):
+                print('[ERROR][VAE::loadModel]')
+                print('\t config.yaml not found beside ckpt!')
+                print('\t expected config_path:', config_path)
+                return False
+
+            self.model = ShapeVAE.from_single_file(
+                ckpt_path=model_folder_path,
+                config_path=config_path,
+                device=str(self.device),
+                dtype=self.dtype,
+                use_safetensors=use_safetensors,
+            )
         else:
             # 当作 HuggingFace / 本地 repo id 处理。
             self.model = ShapeVAE.from_pretrained(
-                model_file_path,
+                model_folder_path,
                 device=str(self.device),
                 dtype=self.dtype,
             )
