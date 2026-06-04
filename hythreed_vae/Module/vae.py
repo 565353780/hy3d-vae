@@ -1,7 +1,6 @@
 import gc
 import io
 import os
-import sys
 
 import numpy as np
 import torch
@@ -10,21 +9,12 @@ import trimesh
 from typing import Dict, Optional, Tuple, Union
 
 
-# Hunyuan3D 的 `hy3dshape` 包位于 ``Hunyuan3D-2.1/hy3dshape`` 目录下（包根再嵌套一层
-# ``hy3dshape``）。这里把它注入 sys.path，便于 ``import hy3dshape...``。
-_HY3DSHAPE_ROOT = os.path.abspath(
-    os.path.join(
-        os.path.dirname(__file__),
-        '..', '..', 'Hunyuan3D-2.1', 'hy3dshape',
-    )
-)
-if _HY3DSHAPE_ROOT not in sys.path:
-    sys.path.append(_HY3DSHAPE_ROOT)
-
-from hy3dshape.surface_loaders import SharpEdgeSurfaceLoader
-from hy3dshape.models.autoencoders import ShapeVAE
-from hy3dshape.models.autoencoders.model import DiagonalGaussianDistribution
-from hy3dshape.pipelines import export_to_trimesh
+# VAE 推理闭包已从 Hunyuan3D-2.1/hy3dshape 迁移到本仓库内嵌的
+# ``hythreed_vae.Lib.hunyuan_shape``，无需再注入外部 sys.path。
+from hythreed_vae.Lib.hunyuan_shape.surface_loaders import SharpEdgeSurfaceLoader
+from hythreed_vae.Lib.hunyuan_shape.models.autoencoders import ShapeVAE
+from hythreed_vae.Lib.hunyuan_shape.models.autoencoders.model import DiagonalGaussianDistribution
+from hythreed_vae.Lib.hunyuan_shape.mesh_export import export_to_trimesh
 
 
 # 官方 demo 默认采样的均匀点数（无锐边点）。
